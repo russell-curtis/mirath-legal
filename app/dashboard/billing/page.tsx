@@ -6,7 +6,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { ManageSubscription } from "../payment/_components/manage-subscription";
+// import { ManageSubscription } from "../payment/_components/manage-subscription";
 
 export default async function BillingPage() {
   const result = await auth.api.getSession({
@@ -33,7 +33,13 @@ export default async function BillingPage() {
           {/* Subscription Management */}
           <div className="bg-white border rounded-lg p-6">
             <h2 className="text-xl font-semibold mb-4">Subscription Management</h2>
-            <ManageSubscription />
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="font-medium text-blue-800 mb-2">Polar.sh Integration Temporarily Disabled</h3>
+              <p className="text-sm text-blue-700">
+                Subscription management is currently unavailable due to API token issues. 
+                Please update your POLAR_ACCESS_TOKEN in the environment variables to re-enable billing features.
+              </p>
+            </div>
           </div>
 
           {/* Time Tracking and Billing - Coming Soon */}

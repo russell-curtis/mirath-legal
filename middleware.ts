@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionCookie } from "better-auth/cookies";
 
 export async function middleware(request: NextRequest) {
-  const sessionCookie = getSessionCookie(request);
   const { pathname } = request.nextUrl;
 
   // /api/payments/webhooks is a webhook endpoint that should be accessible without authentication
@@ -10,14 +8,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (sessionCookie && ["/sign-in", "/sign-up"].includes(pathname)) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
-  if (!sessionCookie && pathname.startsWith("/dashboard")) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
-  }
-
+  // Let the dashboard page handle its own authentication
+  // Remove automatic redirects that cause loops
   return NextResponse.next();
 }
 

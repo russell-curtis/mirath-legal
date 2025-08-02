@@ -219,7 +219,7 @@ export function LawFirmDashboard({ userId }: LawFirmDashboardProps) {
               <Button 
                 className="w-full justify-start" 
                 variant="outline"
-                onClick={() => router.push('/dashboard/matters?status=review')}
+                onClick={() => router.push('/dashboard/wills')}
               >
                 <FileText className="h-4 w-4 mr-2" />
                 Review Pending Wills
@@ -227,10 +227,10 @@ export function LawFirmDashboard({ userId }: LawFirmDashboardProps) {
               <Button 
                 className="w-full justify-start" 
                 variant="outline"
-                onClick={() => router.push('/dashboard/matters/new')}
+                onClick={() => router.push('/dashboard/wills/new')}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Create New Matter
+                Create New Will
               </Button>
             </div>
           </CardContent>

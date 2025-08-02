@@ -231,7 +231,7 @@ export function ClientsView({ userId }: ClientsViewProps) {
           />
         </div>
         
-        <Button onClick={() => router.push('/dashboard/clients/new')}>
+        <Button onClick={() => console.log('Add client - route coming soon')}>
           <Plus className="h-4 w-4 mr-2" />
           Add Client
         </Button>
@@ -250,7 +250,7 @@ export function ClientsView({ userId }: ClientsViewProps) {
               }
             </p>
             {!searchTerm && (
-              <Button onClick={() => router.push('/dashboard/clients/new')}>
+              <Button onClick={() => console.log('Add first client - route coming soon')}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add First Client
               </Button>
@@ -263,7 +263,7 @@ export function ClientsView({ userId }: ClientsViewProps) {
             <Card 
               key={client.id} 
               className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => router.push(`/dashboard/clients/${client.id}`)}
+              onClick={() => console.log(`View client ${client.id} - detail page coming soon`)}
             >
               <CardContent className="p-6">
                 {/* Client Header */}

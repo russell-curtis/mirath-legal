@@ -39,7 +39,7 @@ export default function UserProfile({ mini }: { mini?: boolean }) {
       const result = await authClient.getSession();
 
       if (!result.data?.user) {
-        router.push("/sign-in");
+        setError("No user data available");
         return;
       }
 

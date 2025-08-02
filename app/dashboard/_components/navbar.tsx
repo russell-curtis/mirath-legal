@@ -32,7 +32,7 @@ export default function DashboardTopNav({ children }: { children: ReactNode }) {
           <SheetContent side="left">
             <SheetHeader>
               <Link prefetch={true} href="/">
-                <SheetTitle>Pass Builder</SheetTitle>
+                <SheetTitle>Mirath Legal</SheetTitle>
               </Link>
             </SheetHeader>
             <div className="flex flex-col space-y-3 mt-[1rem]">
@@ -45,27 +45,27 @@ export default function DashboardTopNav({ children }: { children: ReactNode }) {
                 </Link>
               </DialogClose>
               <DialogClose asChild>
-                <Link prefetch={true} href="/dashboard/create">
+                <Link prefetch={true} href="/dashboard/matters">
                   <Button variant="outline" className="w-full">
-                    <Brush className="mr-2 h-4 w-4" />
-                    Create Pass
+                    <MonitorSmartphone className="mr-2 h-4 w-4" />
+                    Matters
                   </Button>
                 </Link>
               </DialogClose>
               <DialogClose asChild>
-                <Link prefetch={true} href="/dashboard/notifications">
+                <Link prefetch={true} href="/dashboard/clients">
                   <Button variant="outline" className="w-full">
-                    <MonitorSmartphone className="mr-2 h-4 w-4" />
-                    Notifications
+                    <LucideGitBranchPlus className="mr-2 h-4 w-4" />
+                    Clients
                   </Button>
                 </Link>
               </DialogClose>
               <Separator className="my-3" />
               <DialogClose asChild>
-                <Link prefetch={true} href="/dashboard/analytics">
+                <Link prefetch={true} href="/dashboard/wills">
                   <Button variant="outline" className="w-full">
-                    <LucideGitBranchPlus className="mr-2 h-4 w-4" />
-                    Analytics
+                    <Brush className="mr-2 h-4 w-4" />
+                    Wills
                   </Button>
                 </Link>
               </DialogClose>

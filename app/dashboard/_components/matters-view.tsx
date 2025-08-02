@@ -240,7 +240,7 @@ export function MattersView({ userId }: MattersViewProps) {
           </div>
         </div>
         
-        <Button onClick={() => router.push('/dashboard/matters/new')}>
+        <Button onClick={() => console.log('Create new matter - route coming soon')}>
           <Plus className="h-4 w-4 mr-2" />
           New Matter
         </Button>
@@ -260,7 +260,7 @@ export function MattersView({ userId }: MattersViewProps) {
                 }
               </p>
               {!searchTerm && statusFilter === 'all' && typeFilter === 'all' && (
-                <Button onClick={() => router.push('/dashboard/matters/new')}>
+                <Button onClick={() => console.log('Create first matter - route coming soon')}>
                   <Plus className="h-4 w-4 mr-2" />
                   Create First Matter
                 </Button>
@@ -272,7 +272,7 @@ export function MattersView({ userId }: MattersViewProps) {
             <Card 
               key={matter.id} 
               className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => router.push(`/dashboard/matters/${matter.id}`)}
+              onClick={() => console.log(`View matter ${matter.id} - detail page coming soon`)}
             >
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">

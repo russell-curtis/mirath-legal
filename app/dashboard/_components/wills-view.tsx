@@ -288,7 +288,7 @@ export function WillsView({ userId }: WillsViewProps) {
             <Card 
               key={will.id} 
               className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => router.push(`/dashboard/wills/${will.id}`)}
+              onClick={() => console.log(`View will ${will.id} - detail page coming soon`)}
             >
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
@@ -372,7 +372,7 @@ export function WillsView({ userId }: WillsViewProps) {
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.push(`/dashboard/wills/${will.id}/preview`);
+                        console.log(`Preview will ${will.id} - route coming soon`);
                       }}
                     >
                       <Eye className="h-4 w-4 mr-1" />
