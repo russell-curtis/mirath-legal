@@ -3,7 +3,7 @@
  * Integrates with OpenAI to generate DIFC-compliant legal documents
  */
 
-import { openai } from "ai";
+import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { getWillTemplate, type PersonalInfo, type Asset, type Beneficiary } from "./will-engine";

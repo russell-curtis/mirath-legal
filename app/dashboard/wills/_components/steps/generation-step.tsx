@@ -20,7 +20,8 @@ import {
   AlertCircle,
   Clock,
   Sparkles,
-  RefreshCw
+  RefreshCw,
+  Calendar
 } from "lucide-react";
 import { WillData } from "../will-creation-wizard";
 
@@ -28,6 +29,7 @@ interface GenerationStepProps {
   data: WillData;
   isGenerating: boolean;
   onGenerate: () => void;
+  onGenerationComplete?: (result: any) => void;
 }
 
 interface GenerationPhase {
@@ -38,11 +40,14 @@ interface GenerationPhase {
   duration?: number;
 }
 
-export function GenerationStep({ data, isGenerating, onGenerate }: GenerationStepProps) {
+export function GenerationStep({ data, isGenerating, onGenerate, onGenerationComplete }: GenerationStepProps) {
   const [currentPhase, setCurrentPhase] = useState(0);
   const [progress, setProgress] = useState(0);
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
   const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [generationResult, setGenerationResult] = useState<any>(null);
 
   const phases: GenerationPhase[] = [
     {
@@ -73,19 +78,86 @@ export function GenerationStep({ data, isGenerating, onGenerate }: GenerationSte
 
   useEffect(() => {
     if (isGenerating) {
-      simulateGeneration();
+      generateWill();
     }
   }, [isGenerating]);
 
-  const simulateGeneration = async () => {
+  const generateWill = async () => {
+    try {
+      setError(null);
+      setCurrentPhase(0);
+      setProgress(10);
+      
+      // Call the API to generate the will
+      const response = await fetch('/api/wills/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          willData: data,
+          generateOptions: {
+            includeLegalAnalysis: true,
+            includeComplianceCheck: true,
+            includeSummary: true,
+            formalityLevel: 'formal',
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate will');
+      }
+
+      const result = await response.json();
+      setJobId(result.jobId);
+      setProgress(30);
+      setCurrentPhase(1);
+
+      if (result.success) {
+        // For successful immediate generation, simulate the progress phases
+        await simulateProgressPhases();
+        
+        // Set the final results
+        setGenerationResult(result);
+        setGeneratedContent("Your DIFC-compliant will has been successfully generated!");
+        setAnalysisResults({
+          complianceScore: result.complianceCheck?.overallScore || 95,
+          recommendations: result.legalAnalysis?.recommendations || [
+            "Consider adding alternate executor for additional security",
+            "DIFC registration recommended within 30 days"
+          ],
+          estimatedValue: data.assets.reduce((sum, asset) => sum + asset.value, 0),
+          difcCompliant: result.complianceCheck?.difcCompliant || false,
+          keyRisks: result.legalAnalysis?.keyRisks || [],
+          willSummary: result.willSummary
+        });
+
+        // Notify parent component
+        if (onGenerationComplete) {
+          onGenerationComplete(result);
+        }
+      } else {
+        throw new Error('Generation failed');
+      }
+
+    } catch (err) {
+      console.error('Will generation error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to generate will');
+      setCurrentPhase(-1); // Error state
+    }
+  };
+
+  const simulateProgressPhases = async () => {
     const phaseTimings = [2000, 1500, 3000, 1000]; // Duration for each phase
     
-    for (let i = 0; i < phases.length; i++) {
+    for (let i = 1; i < phases.length; i++) {
       setCurrentPhase(i);
       
       // Simulate progress within phase
-      const startProgress = (i / phases.length) * 100;
-      const endProgress = ((i + 1) / phases.length) * 100;
+      const startProgress = 30 + ((i - 1) / (phases.length - 1)) * 70;
+      const endProgress = 30 + (i / (phases.length - 1)) * 70;
       
       for (let p = startProgress; p <= endProgress; p += 2) {
         setProgress(p);
@@ -94,18 +166,6 @@ export function GenerationStep({ data, isGenerating, onGenerate }: GenerationSte
       
       await new Promise(resolve => setTimeout(resolve, phaseTimings[i]));
     }
-    
-    // Simulate successful generation
-    setGeneratedContent("Your DIFC-compliant will has been successfully generated!");
-    setAnalysisResults({
-      complianceScore: 98,
-      recommendations: [
-        "Consider adding alternate executor for additional security",
-        "Digital asset provisions are comprehensive",
-        "DIFC registration recommended within 30 days"
-      ],
-      estimatedValue: data.assets.reduce((sum, asset) => sum + asset.value, 0)
-    });
   };
 
   const formatCurrency = (amount: number) => {
@@ -220,6 +280,49 @@ export function GenerationStep({ data, isGenerating, onGenerate }: GenerationSte
     );
   }
 
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <AlertCircle className="h-8 w-8 text-red-600" />
+            <h3 className="text-2xl font-semibold text-red-800">Generation Failed</h3>
+          </div>
+          <p className="text-muted-foreground">
+            We encountered an error while generating your will.
+          </p>
+        </div>
+
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+              <div>
+                <h4 className="font-medium text-red-800 mb-1">Error Details</h4>
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="text-center">
+          <Button 
+            onClick={() => {
+              setError(null);
+              setCurrentPhase(0);
+              setProgress(0);
+              onGenerate();
+            }}
+            className="px-8 py-3"
+          >
+            <RefreshCw className="h-5 w-5 mr-2" />
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (isGenerating) {
     return (
       <div className="space-y-6">
@@ -231,6 +334,11 @@ export function GenerationStep({ data, isGenerating, onGenerate }: GenerationSte
           <p className="text-muted-foreground">
             Our AI is creating your DIFC-compliant will document...
           </p>
+          {jobId && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Job ID: {jobId}
+            </p>
+          )}
         </div>
 
         {/* Progress */}
@@ -372,11 +480,28 @@ export function GenerationStep({ data, isGenerating, onGenerate }: GenerationSte
             </div>
             
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => {
+                  if (generationResult?.willId) {
+                    window.open(`/api/wills/${generationResult.willId}/pdf`, '_blank');
+                  }
+                }}
+                disabled={!generationResult?.willId}
+              >
                 <Eye className="h-4 w-4 mr-2" />
-                Preview
+                Preview PDF
               </Button>
-              <Button className="flex-1">
+              <Button 
+                className="flex-1"
+                onClick={() => {
+                  if (generationResult?.willId) {
+                    window.open(`/api/wills/${generationResult.willId}/pdf?download=true`, '_blank');
+                  }
+                }}
+                disabled={!generationResult?.willId}
+              >
                 <Download className="h-4 w-4 mr-2" />
                 Download PDF
               </Button>

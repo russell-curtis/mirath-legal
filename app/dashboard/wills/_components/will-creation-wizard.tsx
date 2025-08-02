@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +20,9 @@ import {
   FileText, 
   Bot,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Save,
+  Check
 } from "lucide-react";
 
 // Step components
@@ -138,9 +140,12 @@ const steps = [
 
 interface WillCreationWizardProps {
   userId: string;
+  willId?: string;
+  matterId?: string;
+  autoSave?: boolean;
 }
 
-export function WillCreationWizard({ userId }: WillCreationWizardProps) {
+export function WillCreationWizard({ userId, willId, matterId, autoSave = true }: WillCreationWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [willData, setWillData] = useState<WillData>({
     testatorName: '',
@@ -160,6 +165,10 @@ export function WillCreationWizard({ userId }: WillCreationWizardProps) {
   
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  const debounceTimer = useRef<NodeJS.Timeout | undefined>();
 
   const updateWillData = (updates: Partial<WillData>) => {
     setWillData(prev => ({ ...prev, ...updates }));
@@ -169,7 +178,126 @@ export function WillCreationWizard({ userId }: WillCreationWizardProps) {
       delete newErrors[key];
     });
     setValidationErrors(newErrors);
+    
+    // Trigger auto-save if enabled
+    if (autoSave && willId) {
+      setSaveStatus('saving');
+      // Debounce save calls
+      clearTimeout(debounceTimer.current);
+      debounceTimer.current = setTimeout(() => {
+        saveWillData({ ...willData, ...updates });
+      }, 1000);
+    }
   };
+
+  // Auto-save function
+  const saveWillData = useCallback(async (dataToSave: WillData) => {
+    if (!willId || !autoSave) return;
+
+    try {
+      setIsSaving(true);
+      setSaveStatus('saving');
+
+      const response = await fetch(`/api/wills/${willId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          personalInfo: {
+            name: dataToSave.testatorName,
+            emiratesId: dataToSave.emiratesId,
+            nationality: dataToSave.nationality,
+            address: { street: dataToSave.residenceAddress },
+            dateOfBirth: dataToSave.dateOfBirth,
+            maritalStatus: dataToSave.maritalStatus,
+            spouseName: dataToSave.spouseName,
+          },
+          assets: dataToSave.assets.map(asset => ({
+            id: asset.id,
+            type: asset.type,
+            description: asset.description,
+            value: asset.value,
+            location: asset.location,
+            specificInstructions: asset.specificInstructions,
+          })),
+          beneficiaries: dataToSave.beneficiaries.map(ben => ({
+            id: ben.id,
+            name: ben.name,
+            relationship: ben.relationship,
+            percentage: ben.percentage,
+            contingent: ben.contingent,
+            specificAssets: ben.specificAssets,
+            conditions: ben.conditions,
+          })),
+          guardians: dataToSave.guardians,
+          executors: dataToSave.executors,
+          specialInstructions: dataToSave.specialInstructions,
+          willType: dataToSave.willType,
+          language: dataToSave.language,
+        }),
+      });
+
+      if (response.ok) {
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } else {
+        setSaveStatus('error');
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      }
+    } catch (error) {
+      console.error('Auto-save error:', error);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [willId, autoSave]);
+
+  // Load existing will data if willId is provided
+  useEffect(() => {
+    if (willId) {
+      const loadWillData = async () => {
+        try {
+          const response = await fetch(`/api/wills/${willId}`);
+          if (response.ok) {
+            const { will } = await response.json();
+            // Transform database format to UI format
+            setWillData({
+              testatorName: will.personalInfo?.name || '',
+              emiratesId: will.personalInfo?.emiratesId || '',
+              nationality: will.personalInfo?.nationality || '',
+              residenceAddress: will.personalInfo?.address?.street || '',
+              dateOfBirth: will.personalInfo?.dateOfBirth || '',
+              maritalStatus: will.personalInfo?.maritalStatus || 'single',
+              spouseName: will.personalInfo?.spouseName || '',
+              assets: will.assets || [],
+              beneficiaries: will.beneficiaries || [],
+              guardians: will.guardians || [],
+              executors: will.executors || [],
+              specialInstructions: will.specialInstructions || '',
+              willType: will.willType || 'simple',
+              language: will.language || 'en',
+              difcCompliant: will.difcCompliant || false,
+            });
+          }
+        } catch (error) {
+          console.error('Error loading will data:', error);
+        }
+      };
+
+      loadWillData();
+    }
+  }, [willId]);
+
+  // Cleanup debounce timer
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, []);
 
   const validateCurrentStep = (): boolean => {
     const errors: Record<string, string> = {};
@@ -229,11 +357,51 @@ export function WillCreationWizard({ userId }: WillCreationWizardProps) {
 
   const handleGenerate = async () => {
     setIsGenerating(true);
-    // Will be implemented with API call
-    setTimeout(() => {
+    
+    try {
+      // First save the latest data
+      if (willId && autoSave) {
+        await saveWillData(willData);
+      }
+      
+      // Generate the will
+      const response = await fetch('/api/wills/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          willData,
+          matterId,
+          generateOptions: {
+            includeLegalAnalysis: true,
+            includeComplianceCheck: true,
+            includeSummary: true,
+            formalityLevel: 'formal',
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate will');
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Show success and enable download/preview
+        console.log('Will generated successfully:', result);
+        // The generation step component will handle showing the results
+      } else {
+        throw new Error('Generation failed');
+      }
+    } catch (error) {
+      console.error('Will generation error:', error);
+      // Error will be handled by the GenerationStep component
+    } finally {
       setIsGenerating(false);
-      // Navigate to generated will or show success
-    }, 3000);
+    }
   };
 
   const progressPercentage = ((currentStep + 1) / steps.length) * 100;
@@ -300,16 +468,43 @@ export function WillCreationWizard({ userId }: WillCreationWizardProps) {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <steps[currentStep].icon className="h-5 w-5" />
+                {(() => {
+                  const IconComponent = steps[currentStep].icon;
+                  return <IconComponent className="h-5 w-5" />;
+                })()}
                 {steps[currentStep].title}
               </CardTitle>
               <CardDescription>
                 {steps[currentStep].description}
               </CardDescription>
             </div>
-            <Badge variant="outline">
-              Step {currentStep + 1} of {steps.length}
-            </Badge>
+            <div className="flex items-center gap-2">
+              {autoSave && willId && (
+                <div className="flex items-center gap-1 text-sm">
+                  {saveStatus === 'saving' && (
+                    <>
+                      <Save className="h-4 w-4 animate-pulse text-blue-600" />
+                      <span className="text-blue-600">Saving...</span>
+                    </>
+                  )}
+                  {saveStatus === 'saved' && (
+                    <>
+                      <Check className="h-4 w-4 text-green-600" />
+                      <span className="text-green-600">Saved</span>
+                    </>
+                  )}
+                  {saveStatus === 'error' && (
+                    <>
+                      <AlertCircle className="h-4 w-4 text-red-600" />
+                      <span className="text-red-600">Save failed</span>
+                    </>
+                  )}
+                </div>
+              )}
+              <Badge variant="outline">
+                Step {currentStep + 1} of {steps.length}
+              </Badge>
+            </div>
           </div>
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-muted-foreground">
