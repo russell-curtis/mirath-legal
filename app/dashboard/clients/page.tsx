@@ -1,9 +1,14 @@
+/**
+ * Clients Management Page
+ * Lists and manages clients for law firm
+ */
+
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { LawFirmDashboard } from "./_components/law-firm-dashboard";
+import { ClientsView } from "../_components/clients-view";
 
-export default async function Dashboard() {
+export default async function ClientsPage() {
   const result = await auth.api.getSession({
     headers: await headers(),
   });
@@ -17,13 +22,13 @@ export default async function Dashboard() {
       <div className="w-full">
         <div className="flex flex-col items-start justify-center gap-2 mb-6">
           <h1 className="text-3xl font-semibold tracking-tight">
-            Law Firm Dashboard
+            Clients
           </h1>
           <p className="text-muted-foreground">
-            Overview of your estate planning practice and DIFC will management.
+            Manage your client relationships and contact information.
           </p>
         </div>
-        <LawFirmDashboard userId={result.session.userId} />
+        <ClientsView userId={result.session.userId} />
       </div>
     </section>
   );

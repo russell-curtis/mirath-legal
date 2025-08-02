@@ -3,12 +3,15 @@
 import UserProfile from "@/components/user-profile";
 import clsx from "clsx";
 import {
-  Banknote,
-  HomeIcon,
+  LayoutDashboard,
+  Users,
+  FileText,
+  FolderOpen,
+  PiggyBank,
+  Scale,
   LucideIcon,
-  MessageCircleIcon,
   Settings,
-  Upload,
+  MessageCircleIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -23,22 +26,37 @@ const navItems: NavItem[] = [
   {
     label: "Overview",
     href: "/dashboard",
-    icon: HomeIcon,
+    icon: LayoutDashboard,
   },
   {
-    label: "Chat",
+    label: "Matters",
+    href: "/dashboard/matters",
+    icon: FolderOpen,
+  },
+  {
+    label: "Clients",
+    href: "/dashboard/clients",
+    icon: Users,
+  },
+  {
+    label: "Wills",
+    href: "/dashboard/wills",
+    icon: FileText,
+  },
+  {
+    label: "Documents",
+    href: "/dashboard/documents",
+    icon: Scale,
+  },
+  {
+    label: "Billing",
+    href: "/dashboard/billing",
+    icon: PiggyBank,
+  },
+  {
+    label: "AI Assistant",
     href: "/dashboard/chat",
     icon: MessageCircleIcon,
-  },
-  {
-    label: "Upload",
-    href: "/dashboard/upload",
-    icon: Upload,
-  },
-  {
-    label: "Payment Gated",
-    href: "/dashboard/payment",
-    icon: Banknote,
   },
 ];
 
@@ -55,7 +73,7 @@ export default function DashboardSideBar() {
             className="flex items-center font-semibold hover:cursor-pointer"
             href="/"
           >
-            <span>Nextjs Starter Kit</span>
+            <span>Mirath Legal</span>
           </Link>
         </div>
 

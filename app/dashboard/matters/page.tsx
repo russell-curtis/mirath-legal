@@ -1,9 +1,14 @@
+/**
+ * Matters Management Page
+ * Lists and manages legal matters for law firm
+ */
+
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { LawFirmDashboard } from "./_components/law-firm-dashboard";
+import { MattersView } from "../_components/matters-view";
 
-export default async function Dashboard() {
+export default async function MattersPage() {
   const result = await auth.api.getSession({
     headers: await headers(),
   });
@@ -17,13 +22,13 @@ export default async function Dashboard() {
       <div className="w-full">
         <div className="flex flex-col items-start justify-center gap-2 mb-6">
           <h1 className="text-3xl font-semibold tracking-tight">
-            Law Firm Dashboard
+            Matters
           </h1>
           <p className="text-muted-foreground">
-            Overview of your estate planning practice and DIFC will management.
+            Manage your estate planning matters and client cases.
           </p>
         </div>
-        <LawFirmDashboard userId={result.session.userId} />
+        <MattersView userId={result.session.userId} />
       </div>
     </section>
   );
