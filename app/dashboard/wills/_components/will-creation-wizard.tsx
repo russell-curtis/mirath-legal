@@ -364,6 +364,7 @@ export function WillCreationWizard({ userId, willId, matterId, autoSave = true }
         await saveWillData(willData);
       }
       
+
       // Generate the will
       const response = await fetch('/api/wills/generate', {
         method: 'POST',

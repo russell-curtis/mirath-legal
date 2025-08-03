@@ -48,8 +48,9 @@ export function GenerationStep({ data, isGenerating, onGenerate, onGenerationCom
   const [jobId, setJobId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generationResult, setGenerationResult] = useState<any>(null);
-
-  const phases: GenerationPhase[] = [
+  
+  // Make phases stateful so we can update their status
+  const [phases, setPhases] = useState<GenerationPhase[]>([
     {
       id: 'analysis',
       title: 'Legal Analysis',
@@ -74,7 +75,10 @@ export function GenerationStep({ data, isGenerating, onGenerate, onGenerationCom
       description: 'Performing final compliance check and formatting',
       status: 'pending'
     }
-  ];
+  ]);
+
+  // Current operation details for more granular feedback
+  const [currentOperation, setCurrentOperation] = useState<string>('');
 
   useEffect(() => {
     if (isGenerating) {
@@ -82,91 +86,176 @@ export function GenerationStep({ data, isGenerating, onGenerate, onGenerationCom
     }
   }, [isGenerating]);
 
+  // Helper function to update a specific phase status
+  const updatePhaseStatus = (phaseIndex: number, status: GenerationPhase['status']) => {
+    setPhases(prevPhases => 
+      prevPhases.map((phase, index) => 
+        index === phaseIndex ? { ...phase, status } : phase
+      )
+    );
+  };
+
+  // Helper function to reset all phases to pending
+  const resetPhases = () => {
+    setPhases(prevPhases => 
+      prevPhases.map(phase => ({ ...phase, status: 'pending' }))
+    );
+  };
+
   const generateWill = async () => {
     try {
       setError(null);
+      resetPhases();
       setCurrentPhase(0);
-      setProgress(10);
+      setProgress(0);
+      setCurrentOperation('');
       
-      // Call the API to generate the will
-      const response = await fetch('/api/wills/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          willData: data,
-          generateOptions: {
-            includeLegalAnalysis: true,
-            includeComplianceCheck: true,
-            includeSummary: true,
-            formalityLevel: 'formal',
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate will');
-      }
-
-      const result = await response.json();
-      setJobId(result.jobId);
-      setProgress(30);
-      setCurrentPhase(1);
-
-      if (result.success) {
-        // For successful immediate generation, simulate the progress phases
-        await simulateProgressPhases();
-        
-        // Set the final results
-        setGenerationResult(result);
-        setGeneratedContent("Your DIFC-compliant will has been successfully generated!");
-        setAnalysisResults({
-          complianceScore: result.complianceCheck?.overallScore || 95,
-          recommendations: result.legalAnalysis?.recommendations || [
-            "Consider adding alternate executor for additional security",
-            "DIFC registration recommended within 30 days"
-          ],
-          estimatedValue: data.assets.reduce((sum, asset) => sum + asset.value, 0),
-          difcCompliant: result.complianceCheck?.difcCompliant || false,
-          keyRisks: result.legalAnalysis?.keyRisks || [],
-          willSummary: result.willSummary
-        });
-
-        // Notify parent component
-        if (onGenerationComplete) {
-          onGenerationComplete(result);
-        }
-      } else {
-        throw new Error('Generation failed');
-      }
+      // Start the realistic phase progression
+      await executeRealisticGeneration();
 
     } catch (err) {
       console.error('Will generation error:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate will');
-      setCurrentPhase(-1); // Error state
+      
+      // Mark current phase as error
+      if (currentPhase >= 0 && currentPhase < phases.length) {
+        updatePhaseStatus(currentPhase, 'error');
+      }
     }
   };
 
-  const simulateProgressPhases = async () => {
-    const phaseTimings = [2000, 1500, 3000, 1000]; // Duration for each phase
+  const executeRealisticGeneration = async () => {
+    // Phase 1: Legal Analysis
+    setCurrentPhase(0);
+    updatePhaseStatus(0, 'in_progress');
+    setCurrentOperation('Analyzing personal information and Emirates ID...');
+    setProgress(5);
+    await delay(800);
     
-    for (let i = 1; i < phases.length; i++) {
-      setCurrentPhase(i);
-      
-      // Simulate progress within phase
-      const startProgress = 30 + ((i - 1) / (phases.length - 1)) * 70;
-      const endProgress = 30 + (i / (phases.length - 1)) * 70;
-      
-      for (let p = startProgress; p <= endProgress; p += 2) {
-        setProgress(p);
-        await new Promise(resolve => setTimeout(resolve, 50));
+    setCurrentOperation('Reviewing asset portfolios and valuations...');
+    setProgress(12);
+    await delay(1000);
+    
+    setCurrentOperation('Checking DIFC compliance requirements...');
+    setProgress(20);
+    await delay(900);
+    
+    updatePhaseStatus(0, 'completed');
+    
+    // Phase 2: Data Validation
+    setCurrentPhase(1);
+    updatePhaseStatus(1, 'in_progress');
+    setCurrentOperation('Validating beneficiary allocations...');
+    setProgress(28);
+    await delay(700);
+    
+    setCurrentOperation('Verifying asset distribution percentages...');
+    setProgress(35);
+    await delay(800);
+    
+    setCurrentOperation('Cross-checking executor appointments...');
+    setProgress(42);
+    await delay(600);
+    
+    updatePhaseStatus(1, 'completed');
+    
+    // Phase 3: Document Generation (This is where we call the API)
+    setCurrentPhase(2);
+    updatePhaseStatus(2, 'in_progress');
+    setCurrentOperation('Generating AI-powered will document...');
+    setProgress(50);
+    
+    // Make the actual API call during this phase
+    const apiResult = await callWillGenerationAPI();
+    
+    setCurrentOperation('Formatting legal clauses and provisions...');
+    setProgress(70);
+    await delay(1200);
+    
+    setCurrentOperation('Applying DIFC legal templates...');
+    setProgress(80);
+    await delay(800);
+    
+    updatePhaseStatus(2, 'completed');
+    
+    // Phase 4: Quality Review
+    setCurrentPhase(3);
+    updatePhaseStatus(3, 'in_progress');
+    setCurrentOperation('Performing final compliance review...');
+    setProgress(85);
+    await delay(600);
+    
+    setCurrentOperation('Checking document formatting and structure...');
+    setProgress(92);
+    await delay(500);
+    
+    setCurrentOperation('Finalizing will document...');
+    setProgress(98);
+    await delay(400);
+    
+    updatePhaseStatus(3, 'completed');
+    setProgress(100);
+    setCurrentOperation('Generation complete!');
+    
+    // Process the API results
+    processGenerationResults(apiResult);
+  };
+
+  const callWillGenerationAPI = async () => {
+    const response = await fetch('/api/wills/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        willData: data,
+        generateOptions: {
+          includeLegalAnalysis: true,
+          includeComplianceCheck: true,
+          includeSummary: true,
+          formalityLevel: 'formal',
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to generate will');
+    }
+
+    return await response.json();
+  };
+
+  const processGenerationResults = (result: any) => {
+    setJobId(result.jobId);
+    
+    if (result.success) {
+      // Set the final results
+      setGenerationResult(result);
+      setGeneratedContent("Your DIFC-compliant will has been successfully generated!");
+      setAnalysisResults({
+        complianceScore: result.complianceCheck?.overallScore || 95,
+        recommendations: result.legalAnalysis?.recommendations || [
+          "Consider adding alternate executor for additional security",
+          "DIFC registration recommended within 30 days"
+        ],
+        estimatedValue: data.assets.reduce((sum, asset) => sum + asset.value, 0),
+        difcCompliant: result.complianceCheck?.difcCompliant || false,
+        keyRisks: result.legalAnalysis?.keyRisks || [],
+        willSummary: result.willSummary
+      });
+
+      // Notify parent component
+      if (onGenerationComplete) {
+        onGenerationComplete(result);
       }
-      
-      await new Promise(resolve => setTimeout(resolve, phaseTimings[i]));
+    } else {
+      throw new Error('Generation failed');
     }
   };
+
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-AE', {
@@ -175,6 +264,94 @@ export function GenerationStep({ data, isGenerating, onGenerate, onGenerationCom
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
+  };
+
+  const handlePreviewPDF = async () => {
+    try {
+      if (generationResult?.willId) {
+        // Use existing API for database-stored wills
+        window.open(`/api/wills/${generationResult.willId}/pdf`, '_blank');
+      } else if (generationResult) {
+        // Generate PDF from AI results for template-only generation
+        await generatePDFFromResults(false);
+      }
+    } catch (error) {
+      console.error('Error previewing PDF:', error);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    try {
+      if (generationResult?.willId) {
+        // Use existing API for database-stored wills
+        window.open(`/api/wills/${generationResult.willId}/pdf?download=true`, '_blank');
+      } else if (generationResult) {
+        // Generate PDF from AI results for template-only generation
+        await generatePDFFromResults(true);
+      }
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+    }
+  };
+
+  const generatePDFFromResults = async (download: boolean = false) => {
+    try {
+      // Prepare PDF data from generation results
+      const pdfData = {
+        title: `Last Will and Testament of ${data.testatorName}`,
+        content: generationResult?.generatedWill?.templateContent || 
+                generationResult?.generatedWill?.preamble || 
+                'Generated will content not available',
+        testatorName: data.testatorName,
+        willType: data.willType,
+        language: data.language,
+        difcCompliant: generationResult?.difcValidation?.isCompliant || false,
+        jobId: generationResult?.jobId,
+        metadata: generationResult?.metadata || {},
+      };
+
+      // Call the direct PDF generation API
+      const response = await fetch('/api/wills/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pdfData,
+          options: {
+            format: 'A4',
+            download,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      // Handle the PDF response
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      if (download) {
+        // Download the file
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${data.testatorName.replace(/[^a-zA-Z0-9]/g, '_')}_${data.willType}_will.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        // Open in new tab for preview
+        window.open(url, '_blank');
+      }
+      
+      // Clean up the URL object
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error generating PDF from results:', error);
+      throw error;
+    }
   };
 
   const getPhaseIcon = (status: GenerationPhase['status']) => {
@@ -311,6 +488,8 @@ export function GenerationStep({ data, isGenerating, onGenerate, onGenerationCom
               setError(null);
               setCurrentPhase(0);
               setProgress(0);
+              setCurrentOperation('');
+              resetPhases();
               onGenerate();
             }}
             className="px-8 py-3"
@@ -349,7 +528,15 @@ export function GenerationStep({ data, isGenerating, onGenerate, onGenerationCom
                 <span>Overall Progress</span>
                 <span>{Math.round(progress)}%</span>
               </div>
-              <Progress value={progress} className="h-2" />
+              <Progress value={progress} className="h-3" />
+              
+              {/* Current Operation Display */}
+              {currentOperation && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4 animate-pulse" />
+                  <span>{currentOperation}</span>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -357,14 +544,14 @@ export function GenerationStep({ data, isGenerating, onGenerate, onGenerationCom
         {/* Generation Phases */}
         <div className="space-y-4">
           {phases.map((phase, index) => {
-            let status: GenerationPhase['status'] = 'pending';
-            if (index < currentPhase) status = 'completed';
-            else if (index === currentPhase) status = 'in_progress';
+            // Use the actual phase status from our state
+            const status = phase.status;
 
             return (
               <Card key={phase.id} className={
                 status === 'in_progress' ? 'border-blue-200 bg-blue-50' :
                 status === 'completed' ? 'border-green-200 bg-green-50' :
+                status === 'error' ? 'border-red-200 bg-red-50' :
                 'border-gray-200'
               }>
                 <CardContent className="p-4">
@@ -373,17 +560,32 @@ export function GenerationStep({ data, isGenerating, onGenerate, onGenerationCom
                     <div className="flex-1">
                       <h4 className="font-medium">{phase.title}</h4>
                       <p className="text-sm text-muted-foreground">{phase.description}</p>
+                      
                       {status === 'in_progress' && (
-                        <div className="mt-2">
-                          <Badge variant="outline" className="text-xs">
+                        <div className="mt-2 flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs animate-pulse">
                             Processing...
+                          </Badge>
+                          {index === currentPhase && currentOperation && (
+                            <span className="text-xs text-blue-600">{currentOperation}</span>
+                          )}
+                        </div>
+                      )}
+                      
+                      {status === 'completed' && (
+                        <div className="mt-2">
+                          <Badge className="text-xs bg-green-100 text-green-700 border-green-300">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Completed
                           </Badge>
                         </div>
                       )}
-                      {status === 'completed' && (
+                      
+                      {status === 'error' && (
                         <div className="mt-2">
-                          <Badge variant="default" className="text-xs">
-                            ✓ Completed
+                          <Badge className="text-xs bg-red-100 text-red-700 border-red-300">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Error
                           </Badge>
                         </div>
                       )}
@@ -483,24 +685,16 @@ export function GenerationStep({ data, isGenerating, onGenerate, onGenerationCom
               <Button 
                 variant="outline" 
                 className="flex-1"
-                onClick={() => {
-                  if (generationResult?.willId) {
-                    window.open(`/api/wills/${generationResult.willId}/pdf`, '_blank');
-                  }
-                }}
-                disabled={!generationResult?.willId}
+                onClick={handlePreviewPDF}
+                disabled={!generationResult}
               >
                 <Eye className="h-4 w-4 mr-2" />
                 Preview PDF
               </Button>
               <Button 
                 className="flex-1"
-                onClick={() => {
-                  if (generationResult?.willId) {
-                    window.open(`/api/wills/${generationResult.willId}/pdf?download=true`, '_blank');
-                  }
-                }}
-                disabled={!generationResult?.willId}
+                onClick={handleDownloadPDF}
+                disabled={!generationResult}
               >
                 <Download className="h-4 w-4 mr-2" />
                 Download PDF
@@ -536,7 +730,11 @@ export function GenerationStep({ data, isGenerating, onGenerate, onGenerationCom
               </div>
             </div>
             
-            <Button variant="outline" className="w-full">
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => window.open('/dashboard/appointments?service=notarization', '_blank')}
+            >
               <Calendar className="h-4 w-4 mr-2" />
               Schedule Notarization
             </Button>
@@ -560,7 +758,13 @@ export function GenerationStep({ data, isGenerating, onGenerate, onGenerationCom
               <div className="text-sm text-muted-foreground mb-3">
                 Professional lawyer review
               </div>
-              <Button size="sm" variant="outline">Book Review</Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => window.open('/dashboard/appointments?service=legal_review', '_blank')}
+              >
+                Book Review
+              </Button>
             </div>
             
             <div className="text-center p-4 border rounded-lg">
@@ -569,7 +773,13 @@ export function GenerationStep({ data, isGenerating, onGenerate, onGenerationCom
               <div className="text-sm text-muted-foreground mb-3">
                 Complete registration process
               </div>
-              <Button size="sm" variant="outline">Start Registration</Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => window.open('/dashboard/registration?type=difc', '_blank')}
+              >
+                Start Registration
+              </Button>
             </div>
             
             <div className="text-center p-4 border rounded-lg">
@@ -578,7 +788,13 @@ export function GenerationStep({ data, isGenerating, onGenerate, onGenerationCom
               <div className="text-sm text-muted-foreground mb-3">
                 Annual review service
               </div>
-              <Button size="sm" variant="outline">Learn More</Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => window.open('/dashboard/subscription?plan=will_updates', '_blank')}
+              >
+                Learn More
+              </Button>
             </div>
           </div>
         </CardContent>

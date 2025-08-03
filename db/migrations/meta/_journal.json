@@ -15,6 +15,27 @@
       "when": 1754150433128,
       "tag": "0001_strong_dragon_lord",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1754197973518,
+      "tag": "0002_sudden_valkyrie",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1754198006532,
+      "tag": "0003_cool_mandarin",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1754200860804,
+      "tag": "0004_flimsy_sabra",
+      "breakpoints": true
     }
   ]
 }

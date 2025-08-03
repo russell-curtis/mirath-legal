@@ -105,14 +105,24 @@ export const lawFirms = pgTable("law_firms", {
   licenseNumber: text("license_number").notNull().unique(),
   email: text("email").notNull(),
   phone: text("phone"),
+  establishedYear: integer("established_year"),
   address: json("address").$type<{
     street: string;
     city: string;
     emirate: string;
-    poBox: string;
+    poBox?: string;
     country: string;
   }>(),
+  practiceAreas: json("practice_areas").$type<string[]>().default([]),
   logoUrl: text("logo_url"),
+  
+  // License and verification details
+  licenseExpiry: date("license_expiry"),
+  barAssociation: text("bar_association"),
+  insuranceNumber: text("insurance_number"),
+  customDomain: text("custom_domain"),
+  isVerified: boolean("is_verified").default(false),
+  
   settings: json("settings").$type<{
     branding?: {
       primaryColor?: string;
@@ -129,12 +139,14 @@ export const lawFirms = pgTable("law_firms", {
     };
   }>().default({}),
   subscriptionTier: text("subscription_tier").default("starter"), // 'starter', 'professional', 'enterprise'
+  subscriptionStatus: text("subscription_status").default("trial"), // 'trial', 'active', 'suspended', 'cancelled'
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => ({
   nameIdx: index("law_firms_name_idx").on(table.name),
   licenseIdx: index("law_firms_license_idx").on(table.licenseNumber),
+  verifiedIdx: index("law_firms_verified_idx").on(table.isVerified),
 }));
 
 // Law Firm Members
@@ -330,11 +342,13 @@ export const difcComplianceRules = pgTable("difc_compliance_rules", {
 // AI Processing Jobs
 export const aiJobs = pgTable("ai_jobs", {
   id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
   willId: uuid("will_id").references(() => wills.id, { onDelete: "cascade" }),
-  jobType: text("job_type").notNull(), // 'document_generation', 'compliance_check', 'risk_analysis'
-  status: text("status").default("pending"), // 'pending', 'processing', 'completed', 'failed'
+  jobType: text("job_type").notNull(), // 'will_generation', 'compliance_check', 'risk_analysis'
+  status: text("status").default("pending"), // 'pending', 'in_progress', 'completed', 'failed'
   inputData: json("input_data"),
   outputData: json("output_data"),
+  parameters: json("parameters"), // Additional generation parameters
   errorMessage: text("error_message"),
   processingTimeMs: integer("processing_time_ms"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -342,6 +356,7 @@ export const aiJobs = pgTable("ai_jobs", {
 }, (table) => ({
   statusIdx: index("ai_jobs_status_idx").on(table.status, table.createdAt),
   willIdx: index("ai_jobs_will_idx").on(table.willId),
+  userIdx: index("ai_jobs_user_idx").on(table.userId),
 }));
 
 // Time Entries for Billing

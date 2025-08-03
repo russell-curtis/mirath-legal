@@ -1,11 +1,14 @@
+/**
+ * Appointments Booking Page
+ * Allows users to schedule legal services including notarization and legal reviews
+ */
+
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
-import { LawFirmDashboard } from "./_components/law-firm-dashboard";
-import { OnboardingSuccessBanner } from "./_components/onboarding-success-banner";
+import { AppointmentBooking } from "./_components/appointment-booking";
 
-export default async function Dashboard() {
+export default async function AppointmentsPage() {
   const result = await auth.api.getSession({
     headers: await headers(),
   });
@@ -17,19 +20,16 @@ export default async function Dashboard() {
   return (
     <section className="flex flex-col items-start justify-start p-6 w-full">
       <div className="w-full">
-        <Suspense fallback={null}>
-          <OnboardingSuccessBanner />
-        </Suspense>
-        
         <div className="flex flex-col items-start justify-center gap-2 mb-6">
           <h1 className="text-3xl font-semibold tracking-tight">
-            Law Firm Dashboard
+            Schedule Appointment
           </h1>
           <p className="text-muted-foreground">
-            Overview of your estate planning practice and DIFC will management.
+            Book legal services including notarization, legal reviews, and DIFC registration assistance.
           </p>
         </div>
-        <LawFirmDashboard userId={result.session.userId} />
+        
+        <AppointmentBooking userId={result.session.userId} />
       </div>
     </section>
   );
