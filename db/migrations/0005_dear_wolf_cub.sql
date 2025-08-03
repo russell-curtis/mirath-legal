@@ -1,0 +1,1 @@
+ALTER TABLE "law_firms" ALTER COLUMN "subscription_status" SET DEFAULT 'pending_verification';

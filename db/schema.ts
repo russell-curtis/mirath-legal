@@ -139,8 +139,8 @@ export const lawFirms = pgTable("law_firms", {
     };
   }>().default({}),
   subscriptionTier: text("subscription_tier").default("starter"), // 'starter', 'professional', 'enterprise'
-  subscriptionStatus: text("subscription_status").default("trial"), // 'trial', 'active', 'suspended', 'cancelled'
-  isActive: boolean("is_active").default(true),
+  subscriptionStatus: text("subscription_status").default("pending_verification"), // 'pending_verification', 'info_requested', 'rejected', 'trial', 'active', 'suspended', 'cancelled'
+  isActive: boolean("is_active").default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => ({

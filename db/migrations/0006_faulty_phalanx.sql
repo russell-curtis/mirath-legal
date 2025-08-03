@@ -1,0 +1,1 @@
+ALTER TABLE "law_firms" ALTER COLUMN "is_active" SET DEFAULT false;

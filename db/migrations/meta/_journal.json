@@ -36,6 +36,20 @@
       "when": 1754200860804,
       "tag": "0004_flimsy_sabra",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1754213337519,
+      "tag": "0005_dear_wolf_cub",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1754214252481,
+      "tag": "0006_faulty_phalanx",
+      "breakpoints": true
     }
   ]
 }

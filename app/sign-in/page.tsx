@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
+import { Scale } from "lucide-react";
 
 function SignInContent() {
   const [loading, setLoading] = useState(false);
@@ -21,14 +22,29 @@ function SignInContent() {
   const returnTo = searchParams.get("returnTo");
 
   return (
-    <div className="flex flex-col justify-center items-center w-full h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 flex flex-col justify-center items-center p-6">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <div className="flex items-center justify-center mb-6">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white">
+              <Scale className="h-6 w-6" />
+            </div>
+            <div className="text-left">
+              <h1 className="text-2xl font-bold text-gray-900">Mirath Legal</h1>
+              <p className="text-sm text-gray-600">DIFC Estate Planning Platform</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <Card className="max-w-md w-full">
         <CardHeader>
-          <CardTitle className="text-lg md:text-xl">
-            Welcome to Nextjs Starter Kit
+          <CardTitle className="text-lg md:text-xl text-center">
+            Welcome Back
           </CardTitle>
-          <CardDescription className="text-xs md:text-sm">
-            Use your google account to login to your account
+          <CardDescription className="text-xs md:text-sm text-center">
+            Sign in to access your estate planning dashboard
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -97,28 +113,52 @@ function SignInContent() {
                     d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0C79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251"
                   ></path>
                 </svg>
-                Login with Google
+                Sign in with Google
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
-      <p className="mt-6 text-xs text-center text-gray-500 dark:text-gray-400 max-w-md">
-        By signing in, you agree to our{" "}
-        <Link
-          href="/terms-of-service"
-          className="underline hover:text-gray-700 dark:hover:text-gray-300"
-        >
-          Terms of Service
-        </Link>{" "}
-        and{" "}
-        <Link
-          href="/privacy-policy"
-          className="underline hover:text-gray-700 dark:hover:text-gray-300"
-        >
-          Privacy Policy
-        </Link>
-      </p>
+      
+      <div className="mt-6 space-y-4 text-center">
+        <p className="text-xs text-gray-500 max-w-md">
+          By signing in, you agree to our{" "}
+          <Link
+            href="/terms"
+            className="text-blue-600 hover:text-blue-700 underline"
+          >
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link
+            href="/privacy"
+            className="text-blue-600 hover:text-blue-700 underline"
+          >
+            Privacy Policy
+          </Link>
+        </p>
+        
+        <div className="space-y-2">
+          <p className="text-sm text-gray-500">
+            Don't have an account?
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <Link 
+              href="/signup/client"
+              className="text-green-600 hover:text-green-700 font-medium text-sm"
+            >
+              Create Personal Will
+            </Link>
+            <span className="hidden sm:inline text-gray-400">•</span>
+            <Link 
+              href="/register/firm"
+              className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+            >
+              Register Law Firm
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

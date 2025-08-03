@@ -15,6 +15,7 @@ import {
   HomeIcon,
   LucideGitBranchPlus,
   MonitorSmartphone,
+  Shield,
 } from "lucide-react";
 import Link from "next/link";
 import { ReactNode } from "react";
@@ -66,6 +67,15 @@ export default function DashboardTopNav({ children }: { children: ReactNode }) {
                   <Button variant="outline" className="w-full">
                     <Brush className="mr-2 h-4 w-4" />
                     Wills
+                  </Button>
+                </Link>
+              </DialogClose>
+              <Separator className="my-3" />
+              <DialogClose asChild>
+                <Link prefetch={true} href="/admin">
+                  <Button variant="outline" className="w-full">
+                    <Shield className="mr-2 h-4 w-4" />
+                    Admin Panel
                   </Button>
                 </Link>
               </DialogClose>
