@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import { getDevAuth, isDevMode } from '@/lib/dev-auth';
 import { generateWillPDF, type WillPDFData, type PDFOptions } from '@/lib/pdf-generator';
 
 interface GeneratePDFRequest {
@@ -28,16 +29,27 @@ interface GeneratePDFRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    // Authenticate user
-    const result = await auth.api.getSession({
-      headers: await headers(),
-    });
+    // Authenticate user (with development mode support)
+    let userId: string;
+    
+    if (isDevMode()) {
+      const devAuth = await getDevAuth();
+      userId = devAuth?.user.id || 'dev-user-001';
+      console.log('🚀 DEVELOPMENT MODE: Using mock authentication for PDF generation');
+    } else {
+      // Production authentication
+      const result = await auth.api.getSession({
+        headers: await headers(),
+      });
 
-    if (!result?.session?.userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      if (!result?.session?.userId) {
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        );
+      }
+      
+      userId = result.session.userId;
     }
 
     let body: GeneratePDFRequest;
@@ -139,16 +151,27 @@ export async function POST(request: NextRequest) {
 // GET endpoint for PDF generation status or information
 export async function GET(request: NextRequest) {
   try {
-    // Authenticate user
-    const result = await auth.api.getSession({
-      headers: await headers(),
-    });
+    // Authenticate user (with development mode support)
+    let userId: string;
+    
+    if (isDevMode()) {
+      const devAuth = await getDevAuth();
+      userId = devAuth?.user.id || 'dev-user-001';
+      console.log('🚀 DEVELOPMENT MODE: Using mock authentication for PDF service info');
+    } else {
+      // Production authentication
+      const result = await auth.api.getSession({
+        headers: await headers(),
+      });
 
-    if (!result?.session?.userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      if (!result?.session?.userId) {
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        );
+      }
+      
+      userId = result.session.userId;
     }
 
     return NextResponse.json({

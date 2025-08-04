@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import { getDevAuth, isDevMode } from '@/lib/dev-auth';
 import { db } from '@/db/drizzle';
 import { wills, matters, willDocuments } from '@/db/schema';
 import { eq, and, desc, asc, ilike, or } from 'drizzle-orm';
@@ -14,16 +15,27 @@ import { validateWillCompleteness, getWillTemplate } from '@/lib/will-engine';
 // GET: List all wills for the authenticated user
 export async function GET(request: NextRequest) {
   try {
-    // Authenticate user
-    const result = await auth.api.getSession({
-      headers: await headers(),
-    });
+    // Authenticate user (with development mode support)
+    let userId: string;
+    
+    if (isDevMode()) {
+      const devAuth = await getDevAuth();
+      userId = devAuth?.user.id || 'dev-user-001';
+      console.log('🚀 DEVELOPMENT MODE: Using mock authentication for wills list');
+    } else {
+      // Production authentication
+      const result = await auth.api.getSession({
+        headers: await headers(),
+      });
 
-    if (!result?.session?.userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      if (!result?.session?.userId) {
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        );
+      }
+      
+      userId = result.session.userId;
     }
 
     const { searchParams } = new URL(request.url);
@@ -43,7 +55,7 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
 
     // Build query conditions
-    let whereConditions = [eq(wills.testatorId, result.session.userId)];
+    let whereConditions = [eq(wills.testatorId, userId)];
 
     if (status && status !== 'all') {
       whereConditions.push(eq(wills.status, status as any));
@@ -166,16 +178,27 @@ export async function GET(request: NextRequest) {
 // POST: Create a new will (alternative to matter-specific creation)
 export async function POST(request: NextRequest) {
   try {
-    // Authenticate user
-    const result = await auth.api.getSession({
-      headers: await headers(),
-    });
+    // Authenticate user (with development mode support)
+    let userId: string;
+    
+    if (isDevMode()) {
+      const devAuth = await getDevAuth();
+      userId = devAuth?.user.id || 'dev-user-001';
+      console.log('🚀 DEVELOPMENT MODE: Using mock authentication for will creation');
+    } else {
+      // Production authentication
+      const result = await auth.api.getSession({
+        headers: await headers(),
+      });
 
-    if (!result?.session?.userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      if (!result?.session?.userId) {
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        );
+      }
+      
+      userId = result.session.userId;
     }
 
     const body = await request.json();
@@ -205,7 +228,7 @@ export async function POST(request: NextRequest) {
     // Create minimal will record for the wizard
     const [will] = await db.insert(wills).values({
       matterId,
-      testatorId: result.session.userId,
+      testatorId: userId,
       willType: 'simple',
       language: 'en',
       personalInfo: {},

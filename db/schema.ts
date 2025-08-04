@@ -162,25 +162,75 @@ export const lawFirmMembers = pgTable("law_firm_members", {
   uniqueFirmUser: index("law_firm_members_unique_firm_user").on(table.lawFirmId, table.userId),
 }));
 
-// Matters (Cases)
+// Matters (Cases) - Enhanced for comprehensive estate planning workflow
 export const matters = pgTable("matters", {
   id: uuid("id").primaryKey().defaultRandom(),
   lawFirmId: uuid("law_firm_id").notNull().references(() => lawFirms.id, { onDelete: "cascade" }),
   clientId: text("client_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  assignedLawyerId: text("assigned_lawyer_id").references(() => user.id),
+  
+  // Lawyer Assignment
+  primaryLawyerId: text("primary_lawyer_id").references(() => user.id),
+  assignedLawyerId: text("assigned_lawyer_id").references(() => user.id), // Backwards compatibility
+  assignedLawyers: json("assigned_lawyers").$type<string[]>().default([]),
+  
+  // Matter Details
   matterNumber: text("matter_number").notNull(),
   title: text("title").notNull(),
-  matterType: text("matter_type").notNull(), // 'simple_will', 'complex_will', 'business_succession', 'trust_setup'
-  status: text("status").default("intake"), // 'intake', 'draft', 'review', 'client_review', 'complete', 'registered'
-  priority: text("priority").default("normal"), // 'low', 'normal', 'high', 'urgent'
-  dueDate: date("due_date"),
   description: text("description"),
+  matterType: text("matter_type").notNull(), // 'simple_will', 'complex_will', 'business_succession', 'trust_setup', 'digital_assets', 'guardianship_will', 'will_amendment', 'estate_administration'
+  
+  // Enhanced Status Workflow (11 statuses)
+  status: text("status").default("intake"), // 'intake', 'assessment', 'document_generation', 'lawyer_review', 'client_review', 'difc_preparation', 'difc_submitted', 'registered', 'completed', 'on_hold', 'cancelled'
+  priority: text("priority").default("normal"), // 'low', 'normal', 'high', 'urgent'
+  
+  // Timeline Management
+  dueDate: date("due_date"),
+  targetCompletionDate: date("target_completion_date"),
+  actualCompletionDate: date("actual_completion_date"),
+  
+  // Estate Planning Specific Fields
+  estateValue: decimal("estate_value", { precision: 15, scale: 2 }),
+  complexityScore: integer("complexity_score").default(1), // 1-10 complexity rating
+  difcEligible: boolean("difc_eligible").default(true),
+  
+  // Client Data Storage
+  intakeData: json("intake_data").$type<{
+    personalInfo?: {
+      fullName: string;
+      emiratesId: string;
+      visaStatus: 'residence' | 'investor' | 'golden' | 'employment' | 'other';
+      nationality: string;
+      maritalStatus: 'single' | 'married' | 'divorced' | 'widowed';
+      contactInfo: any;
+    };
+    assets?: any[];
+    beneficiaries?: any[];
+    existingWills?: any[];
+    specialCircumstances?: string[];
+  }>().default({}),
+  
+  assessmentData: json("assessment_data").$type<{
+    complexityScore?: number;
+    estimatedTimeline?: number;
+    riskFactors?: string[];
+    estimatedFees?: number;
+    complianceFlags?: string[];
+    aiRecommendations?: string[];
+  }>().default({}),
+  
+  // AI Integration
+  aiGenerationJobs: json("ai_generation_jobs").$type<string[]>().default([]),
+  
+  // Timestamps
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => ({
   firmStatusIdx: index("matters_firm_status_idx").on(table.lawFirmId, table.status),
   clientIdx: index("matters_client_idx").on(table.clientId),
-  assignedLawyerIdx: index("matters_assigned_lawyer_idx").on(table.assignedLawyerId),
+  primaryLawyerIdx: index("matters_primary_lawyer_idx").on(table.primaryLawyerId),
+  assignedLawyerIdx: index("matters_assigned_lawyer_idx").on(table.assignedLawyerId), // Backwards compatibility
+  complexityIdx: index("matters_complexity_idx").on(table.complexityScore),
+  dueDateIdx: index("matters_due_date_idx").on(table.dueDate),
   uniqueMatterNumber: index("matters_unique_matter_number").on(table.lawFirmId, table.matterNumber),
 }));
 
@@ -375,6 +425,175 @@ export const timeEntries = pgTable("time_entries", {
 }, (table) => ({
   matterDateIdx: index("time_entries_matter_date_idx").on(table.matterId, table.entryDate),
   lawyerIdx: index("time_entries_lawyer_idx").on(table.lawyerId),
+}));
+
+// Matter Tasks - Task management and workflow automation
+export const matterTasks = pgTable("matter_tasks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  matterId: uuid("matter_id").notNull().references(() => matters.id, { onDelete: "cascade" }),
+  assignedTo: text("assigned_to").references(() => user.id),
+  
+  // Task Details
+  title: text("title").notNull(),
+  description: text("description"),
+  status: text("status").default("pending"), // 'pending', 'in_progress', 'completed', 'cancelled', 'overdue'
+  priority: text("priority").default("normal"), // 'low', 'normal', 'high', 'urgent'
+  
+  // Timeline
+  dueDate: date("due_date"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  
+  // AI Integration
+  aiAssisted: boolean("ai_assisted").default(false),
+  aiConfidence: decimal("ai_confidence", { precision: 3, scale: 2 }),
+  
+  // Dependencies
+  dependencies: json("dependencies").$type<string[]>().default([]), // Task IDs this task depends on
+  
+  // Time Tracking
+  estimatedHours: decimal("estimated_hours", { precision: 4, scale: 2 }),
+  actualHours: decimal("actual_hours", { precision: 4, scale: 2 }),
+  billable: boolean("billable").default(true),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  matterStatusIdx: index("matter_tasks_matter_status_idx").on(table.matterId, table.status),
+  assigneeStatusIdx: index("matter_tasks_assignee_status_idx").on(table.assignedTo, table.status),
+  dueDateIdx: index("matter_tasks_due_date_idx").on(table.dueDate),
+  priorityIdx: index("matter_tasks_priority_idx").on(table.priority),
+}));
+
+// Matter Timeline - Activity tracking and audit trail
+export const matterTimeline = pgTable("matter_timeline", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  matterId: uuid("matter_id").notNull().references(() => matters.id, { onDelete: "cascade" }),
+  userId: text("user_id").references(() => user.id), // Null for system events
+  
+  // Event Details
+  eventType: text("event_type").notNull(), // 'status_change', 'task_created', 'task_completed', 'document_generated', 'client_communication', 'difc_submission'
+  title: text("title").notNull(),
+  description: text("description"),
+  
+  // Event Metadata
+  metadata: json("metadata").$type<{
+    previousStatus?: string;
+    newStatus?: string;
+    taskId?: string;
+    documentId?: string;
+    emailSent?: boolean;
+    difcSubmissionId?: string;
+    aiJobId?: string;
+    billableTime?: number;
+    [key: string]: any;
+  }>().default({}),
+  
+  // Visibility
+  clientVisible: boolean("client_visible").default(false), // Should this event be visible to client?
+  internalOnly: boolean("internal_only").default(false), // Internal lawyer notes only
+  
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+}, (table) => ({
+  matterTimeIdx: index("matter_timeline_matter_time_idx").on(table.matterId, table.timestamp.desc()),
+  eventTypeIdx: index("matter_timeline_event_type_idx").on(table.eventType),
+  clientVisibleIdx: index("matter_timeline_client_visible_idx").on(table.clientVisible),
+}));
+
+// DIFC Registrations - UAE-specific registration workflow
+export const difcRegistrations = pgTable("difc_registrations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  matterId: uuid("matter_id").notNull().references(() => matters.id, { onDelete: "cascade" }),
+  willId: uuid("will_id").references(() => wills.id),
+  
+  // DIFC Submission Details
+  submissionId: text("submission_id"), // DIFC internal reference
+  registrationNumber: text("registration_number"), // Final DIFC registration number
+  status: text("status").default("preparing"), // 'preparing', 'ready_to_submit', 'submitted', 'under_review', 'approved', 'registered', 'rejected'
+  
+  // Timeline
+  submissionDate: date("submission_date"),
+  reviewStartDate: date("review_start_date"),
+  registrationDate: date("registration_date"),
+  certificateDate: date("certificate_date"),
+  expiryDate: date("expiry_date"),
+  
+  // Fees and Payments
+  registrationFee: decimal("registration_fee", { precision: 8, scale: 2 }),
+  processingFee: decimal("processing_fee", { precision: 8, scale: 2 }),
+  additionalFees: decimal("additional_fees", { precision: 8, scale: 2 }),
+  totalFees: decimal("total_fees", { precision: 8, scale: 2 }),
+  feesPaid: boolean("fees_paid").default(false),
+  paymentReference: text("payment_reference"),
+  
+  // Documents
+  certificateUrl: text("certificate_url"),
+  submissionPackageUrl: text("submission_package_url"),
+  
+  // DIFC Contact Information
+  difcContactPerson: text("difc_contact_person"),
+  appointmentDate: timestamp("appointment_date"),
+  appointmentNotes: text("appointment_notes"),
+  
+  // Compliance
+  complianceChecked: boolean("compliance_checked").default(false),
+  complianceDate: timestamp("compliance_date"),
+  complianceNotes: text("compliance_notes"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  matterStatusIdx: index("difc_registrations_matter_status_idx").on(table.matterId, table.status),
+  submissionDateIdx: index("difc_registrations_submission_date_idx").on(table.submissionDate),
+  registrationNumberIdx: index("difc_registrations_registration_number_idx").on(table.registrationNumber),
+  statusIdx: index("difc_registrations_status_idx").on(table.status),
+}));
+
+// Matter Documents - Extended document management for matters
+export const matterDocuments = pgTable("matter_documents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  matterId: uuid("matter_id").notNull().references(() => matters.id, { onDelete: "cascade" }),
+  willId: uuid("will_id").references(() => wills.id), // Link to will if applicable
+  
+  // Document Details
+  documentType: text("document_type").notNull(), // 'intake_form', 'assessment_report', 'ai_generated_will', 'revised_will', 'client_review', 'final_will', 'difc_submission', 'certificate', 'supporting_document'
+  fileName: text("file_name").notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileSize: integer("file_size"),
+  mimeType: text("mime_type"),
+  
+  // Version Control
+  version: integer("version").default(1),
+  parentDocumentId: uuid("parent_document_id").references(() => matterDocuments.id),
+  isLatestVersion: boolean("is_latest_version").default(true),
+  
+  // Generation Info
+  generatedBy: text("generated_by"), // 'ai', 'lawyer', 'client', 'system'
+  generationJobId: text("generation_job_id"), // Reference to AI job if AI-generated
+  
+  // Approval Workflow
+  status: text("status").default("draft"), // 'draft', 'pending_review', 'approved', 'rejected', 'final'
+  reviewedBy: text("reviewed_by").references(() => user.id),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewNotes: text("review_notes"),
+  
+  // Client Access
+  clientVisible: boolean("client_visible").default(false),
+  clientDownloadable: boolean("client_downloadable").default(false),
+  requiresClientSignature: boolean("requires_client_signature").default(false),
+  clientSignedAt: timestamp("client_signed_at"),
+  
+  // Security
+  encrypted: boolean("encrypted").default(false),
+  accessLevel: text("access_level").default("internal"), // 'public', 'client', 'internal', 'admin'
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  matterTypeIdx: index("matter_documents_matter_type_idx").on(table.matterId, table.documentType),
+  latestVersionIdx: index("matter_documents_latest_version_idx").on(table.isLatestVersion),
+  clientVisibleIdx: index("matter_documents_client_visible_idx").on(table.clientVisible),
+  statusIdx: index("matter_documents_status_idx").on(table.status),
 }));
 
 // Audit Logs

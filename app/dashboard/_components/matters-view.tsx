@@ -74,90 +74,53 @@ export function MattersView({ userId }: MattersViewProps) {
   const [typeFilter, setTypeFilter] = useState('all');
 
   useEffect(() => {
-    // TODO: Fetch actual data from API
-    // For now, using mock data
-    const mockMatters: Matter[] = [
-      {
-        id: '1',
-        matterNumber: 'ML-2024-001',
-        title: 'Estate Planning for Al-Mansouri Family',
-        clientName: 'Ahmed Al-Mansouri',
-        matterType: 'complex_will',
-        status: 'review',
-        priority: 'high',
-        assignedLawyer: 'Sarah Johnson',
-        createdAt: '2024-01-15',
-        dueDate: '2024-02-15',
-        progress: 75,
-      },
-      {
-        id: '2',
-        matterNumber: 'ML-2024-002',
-        title: 'Simple Will - Johnson Family',
-        clientName: 'Michael Johnson',
-        matterType: 'simple_will',
-        status: 'complete',
-        priority: 'normal',
-        assignedLawyer: 'Ahmed Hassan',
-        createdAt: '2024-01-10',
-        dueDate: '2024-01-25',
-        progress: 100,
-      },
-      {
-        id: '3',
-        matterNumber: 'ML-2024-003',
-        title: 'Business Succession Planning',
-        clientName: 'Chen Holdings LLC',
-        matterType: 'business_succession',
-        status: 'draft',
-        priority: 'urgent',
-        assignedLawyer: 'Sarah Johnson',
-        createdAt: '2024-01-20',
-        dueDate: '2024-02-20',
-        progress: 40,
-      },
-      {
-        id: '4',
-        matterNumber: 'ML-2024-004',
-        title: 'Trust Setup for Expatriate Family',
-        clientName: 'Dr. Fatima Al-Zahra',
-        matterType: 'trust_setup',
-        status: 'intake',
-        priority: 'normal',
-        assignedLawyer: 'Ahmed Hassan',
-        createdAt: '2024-01-22',
-        dueDate: '2024-03-01',
-        progress: 15,
-      },
-      {
-        id: '5',
-        matterNumber: 'ML-2024-005',
-        title: 'Digital Assets Will',
-        clientName: 'Tech Entrepreneur Smith',
-        matterType: 'complex_will',
-        status: 'client_review',
-        priority: 'high',
-        assignedLawyer: 'Sarah Johnson',
-        createdAt: '2024-01-18',
-        dueDate: '2024-02-10',
-        progress: 85,
-      },
-    ];
+    fetchMatters();
+  }, [userId, statusFilter, typeFilter]);
 
-    setMatters(mockMatters);
-    setLoading(false);
-  }, [userId]);
+  // Debounce search to avoid too many API calls
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchMatters();
+    }, 500);
 
-  const filteredMatters = matters.filter(matter => {
-    const matchesSearch = matter.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         matter.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         matter.matterNumber.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || matter.status === statusFilter;
-    const matchesType = typeFilter === 'all' || matter.matterType === typeFilter;
-    
-    return matchesSearch && matchesStatus && matchesType;
-  });
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  const fetchMatters = async () => {
+    try {
+      setLoading(true);
+      
+      const params = new URLSearchParams();
+      if (searchTerm) params.set('search', searchTerm);
+      if (statusFilter !== 'all') params.set('status', statusFilter);
+      if (typeFilter !== 'all') params.set('matterType', typeFilter);
+      
+      const response = await fetch(`/api/matters?${params.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch matters');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setMatters(data.matters || []);
+      } else {
+        console.error('Failed to fetch matters:', data.error);
+        // Fall back to empty array
+        setMatters([]);
+      }
+    } catch (error) {
+      console.error('Error fetching matters:', error);
+      // Fall back to empty array
+      setMatters([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Since filtering is now handled server-side, we use matters directly
+  const filteredMatters = matters;
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -240,7 +203,7 @@ export function MattersView({ userId }: MattersViewProps) {
           </div>
         </div>
         
-        <Button onClick={() => console.log('Create new matter - route coming soon')}>
+        <Button onClick={() => router.push('/dashboard/matters/new')}>
           <Plus className="h-4 w-4 mr-2" />
           New Matter
         </Button>
@@ -260,7 +223,7 @@ export function MattersView({ userId }: MattersViewProps) {
                 }
               </p>
               {!searchTerm && statusFilter === 'all' && typeFilter === 'all' && (
-                <Button onClick={() => console.log('Create first matter - route coming soon')}>
+                <Button onClick={() => router.push('/dashboard/matters/new')}>
                   <Plus className="h-4 w-4 mr-2" />
                   Create First Matter
                 </Button>
@@ -272,7 +235,7 @@ export function MattersView({ userId }: MattersViewProps) {
             <Card 
               key={matter.id} 
               className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => console.log(`View matter ${matter.id} - detail page coming soon`)}
+              onClick={() => router.push(`/dashboard/matters/${matter.id}`)}
             >
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">

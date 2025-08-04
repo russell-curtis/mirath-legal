@@ -7,14 +7,28 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { WillCreationWizard } from "../_components/will-creation-wizard";
+import { getDevAuth, isDevMode } from "@/lib/dev-auth";
 
 export default async function NewWillPage() {
-  const result = await auth.api.getSession({
-    headers: await headers(),
-  });
+  let userId: string;
+  
+  // Check for development mode first
+  if (isDevMode()) {
+    const devAuth = await getDevAuth();
+    userId = devAuth?.user.id || 'dev-user-001';
+    console.log('🚀 DEVELOPMENT MODE: Using mock authentication for will creation');
+    console.log('👤 Mock User ID:', userId);
+  } else {
+    // Production authentication
+    const result = await auth.api.getSession({
+      headers: await headers(),
+    });
 
-  if (!result?.session?.userId) {
-    redirect("/sign-in");
+    if (!result?.session?.userId) {
+      redirect("/sign-in");
+    }
+    
+    userId = result.session.userId;
   }
 
   return (
@@ -28,7 +42,7 @@ export default async function NewWillPage() {
             Guided wizard to create a DIFC-compliant will with AI assistance.
           </p>
         </div>
-        <WillCreationWizard userId={result.session.userId} />
+        <WillCreationWizard userId={userId} />
       </div>
     </section>
   );

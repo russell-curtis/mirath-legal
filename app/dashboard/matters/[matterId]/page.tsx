@@ -1,22 +1,26 @@
 /**
- * Matters Management Page
- * Lists and manages legal matters for law firm
+ * Matter Detail Page
+ * View and manage individual matter details with status updates
  */
 
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getDevAuth, isDevMode } from "@/lib/dev-auth";
-import { MattersView } from "../_components/matters-view";
+import { MatterDetailView } from "./_components/matter-detail-view";
 
-export default async function MattersPage() {
+export default async function MatterDetailPage({
+  params,
+}: {
+  params: { matterId: string };
+}) {
   let userId: string;
   
   // Check for development mode first
   if (isDevMode()) {
     const devAuth = await getDevAuth();
     userId = devAuth?.user.id || 'dev-user-001';
-    console.log('🚀 DEVELOPMENT MODE: Using mock authentication for matters page');
+    console.log('🚀 DEVELOPMENT MODE: Using mock authentication for matter detail page');
   } else {
     // Production authentication
     const result = await auth.api.getSession({
@@ -32,16 +36,8 @@ export default async function MattersPage() {
 
   return (
     <section className="flex flex-col items-start justify-start p-6 w-full">
-      <div className="w-full">
-        <div className="flex flex-col items-start justify-center gap-2 mb-6">
-          <h1 className="text-3xl font-semibold tracking-tight">
-            Matters
-          </h1>
-          <p className="text-muted-foreground">
-            Manage your estate planning matters and client cases.
-          </p>
-        </div>
-        <MattersView userId={userId} />
+      <div className="w-full max-w-6xl">
+        <MatterDetailView matterId={params.matterId} userId={userId} />
       </div>
     </section>
   );

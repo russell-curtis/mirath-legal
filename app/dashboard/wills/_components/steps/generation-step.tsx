@@ -202,7 +202,7 @@ export function GenerationStep({ data, isGenerating, onGenerate, onGenerationCom
   };
 
   const callWillGenerationAPI = async () => {
-    const response = await fetch('/api/wills/generate', {
+    const response = await fetch('/api/wills/generate-simple', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

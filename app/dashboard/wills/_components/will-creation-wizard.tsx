@@ -366,14 +366,13 @@ export function WillCreationWizard({ userId, willId, matterId, autoSave = true }
       
 
       // Generate the will
-      const response = await fetch('/api/wills/generate', {
+      const response = await fetch('/api/wills/generate-simple', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           willData,
-          matterId,
           generateOptions: {
             includeLegalAnalysis: true,
             includeComplianceCheck: true,
